@@ -3,7 +3,7 @@
 ## Installation 
 
 ```shell
-pip
+pip install -r requirements.txt
 ```
 
 ## Usage
