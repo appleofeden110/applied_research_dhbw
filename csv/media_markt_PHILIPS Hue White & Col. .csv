@@ -1,4 +1,4 @@
-id,prod_name,price,country,source,author,review_txt,rating
+[id,prod_name,price,country,source,author,review_txt,rating
 1,PHILIPS Hue White & Col. Amb. E27 Doppelpack 2x1100 LED Lampe Mehrfarbig,"82,99€",DE,media_markt,,Wie gewohnt 👍 Eben Hue,5
 2,PHILIPS Hue White & Col. Amb. E27 Doppelpack 2x1100 LED Lampe Mehrfarbig,"82,99€",DE,media_markt,,Super Birnen. Würde ich immer wieder kaufen. Gute Lichtleistung.,5
 3,PHILIPS Hue White & Col. Amb. E27 Doppelpack 2x1100 LED Lampe Mehrfarbig,"82,99€",DE,media_markt,,Sehr einfache Einrichtung,5
