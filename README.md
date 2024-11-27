@@ -3,14 +3,36 @@
 ## Installation 
 
 ```shell
-pip
+pip install -r requirements.txt
 ```
 
 ## Usage
 
 ```shell
-python ./scrapper/main.py "[media markt.de url]" 
+python ./scrapper/main.py -a or -m"[amazon or media markt.de url]" 
 ```
+
+    -a - amazon url (customer reviews)
+    -m - mediamarkt url 
+
+
+## Amazon reviews
+
+To lookup all reviews, you will need to input your amazon credentials. Another method instead is to make an "auth/auth.json" file, see image: 
+![structure](./auth.png)
+
+After that you will be able to scrape amazon reviews without any manual input after that.
+
+Another thing is that Amazon might ask you to put in Captcha before entering your credentials. This is happening because you used too much of the same User-Agent. It'll require few steps to take, but will not prevent you from scraping.
+
+ This will require you to look into the window that will open, up until authentication will proceed further. 
+
+You will need to complete captcha by just entering six letters on the screen upper or lowercase. 
+
+After you do that, you credentials you entered earlier will proceed to be put on and the program will run its course
+
+It might take 2 turns of authentication so watch out for that.
+
 
 ## Description 
 
@@ -20,42 +42,11 @@ For now it is only accepting MediaMarkt.de URLs and does not work with any other
 
 ## Warnings
 
-Generally speaking, you might encounter something of this sort of error when trying the bot
+- All credentials and private information not stored anywhere except this directory.
+- If page of reviews in Amazon taking too long to load and reviews are not being scraped for more than 5 seconds, reload it using Ctrl+R
+- Maximum amount of Amazon reviews is 200, due to constraints of the Amazon itself.
 
-```shell
-Error clicking next page: Message: no such element: Unable to locate element: {"method":"xpath","selector":".//button[contains(., "Nächste Seite")]"}
-  (Session info: chrome=130.0.6723.60); For documentation on this error, please visit: https://www.selenium.dev/documentation/webdriver/troubleshooting/errors#no-such-element-exception
-Stacktrace:
-        GetHandleVerifier [0x00007FF666E53AB5+28005]
-        (No symbol) [0x00007FF666DB83B0]
-        (No symbol) [0x00007FF666C5580A]
-        (No symbol) [0x00007FF666CA5A3E]
-        (No symbol) [0x00007FF666CA5D2C]
-        (No symbol) [0x00007FF666C9937C]
-        (No symbol) [0x00007FF666CCBA7F]
-        (No symbol) [0x00007FF666C99246]
-        (No symbol) [0x00007FF666CCBC50]
-        (No symbol) [0x00007FF666CEB8B3]
-        (No symbol) [0x00007FF666CCB7E3]
-        (No symbol) [0x00007FF666C975C8]
-        (No symbol) [0x00007FF666C98731]
-        GetHandleVerifier [0x00007FF66714643D+3118829]
-        GetHandleVerifier [0x00007FF667196C90+3448640]
-        GetHandleVerifier [0x00007FF66718CF0D+3408317]
-        GetHandleVerifier [0x00007FF666F1A40B+841403]
-        (No symbol) [0x00007FF666DC340F]
-        (No symbol) [0x00007FF666DBF484]
-        (No symbol) [0x00007FF666DBF61D]
-        (No symbol) [0x00007FF666DAEB79]
-        BaseThreadInitThunk [0x00007FFE59F67374+20]
-        RtlUserThreadStart [0x00007FFE5AA9CC91+33]
 
-Could not proceed to next page after page 6
-
-```
-
-We could not find a smooth solution to this problem, but essentially it is just showing that it cannot read more reviews than there is on the page. It will be turned into a smooth logging line, however at the moment it is as it is. 
-
-We would love to hear your feedback. 
+Hope you enjoy it,
 
 Data Science Team

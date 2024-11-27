@@ -47,13 +47,22 @@ def which(choices: List[str], choice_type: str) -> str:
     return choices[int(input("\npick a number to choose: "))-1]
 
 def authJsonLookup() -> tuple[bool, AmazonCredentials]:
-    authPath = os.getcwd()+"/auth/auth.json"
-    print(authPath)
-    print("Trying to look for ../auth/auth.json file for auth...")    
-    with open(authPath, "r", encoding="utf-8") as f: 
-        data = json.load(f)
-        return True, AmazonCredentials(data["email"], data["password"])
-    return False, AmazonCredentials("", "")
+    try:
+        authPath = os.getcwd() + "/auth/auth.json"
+        print(authPath)
+        print("Trying to look for ../auth/auth.json file for auth...")     
+        
+        with open(authPath, "r", encoding="utf-8") as f:  
+            data = json.load(f) 
+            return True, AmazonCredentials(data["email"], data["password"]) 
+    
+    except FileNotFoundError:
+        print("Could not find auth, taking manual auth cred:")
+        return False, AmazonCredentials("", "")
+    
+    except json.JSONDecodeError as e:
+        print(f"Error: Invalid JSON format in {authPath}, message: {e}")
+        return False, AmazonCredentials("", "")
 
 def main():
     if len(sys.argv) < 3:

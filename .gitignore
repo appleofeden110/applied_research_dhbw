@@ -28,4 +28,4 @@ htmlcov/
 .DS_Store
 csv/
 pyproject.toml
-auth/auth.json
+auth/
