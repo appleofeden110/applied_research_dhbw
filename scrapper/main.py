@@ -1,3 +1,4 @@
+import json
 import sys
 import os
 from csv import DictWriter
@@ -45,6 +46,14 @@ def which(choices: List[str], choice_type: str) -> str:
         i += 1
     return choices[int(input("\npick a number to choose: "))-1]
 
+def authJsonLookup() -> tuple[bool, AmazonCredentials]:
+    authPath = os.getcwd()+"/auth/auth.json"
+    print(authPath)
+    print("Trying to look for ../auth/auth.json file for auth...")    
+    with open(authPath, "r", encoding="utf-8") as f: 
+        data = json.load(f)
+        return True, AmazonCredentials(data["email"], data["password"])
+    return False, AmazonCredentials("", "")
 
 def main():
     if len(sys.argv) < 3:
@@ -55,8 +64,15 @@ def main():
     browser = which(["Firefox", "Chrome"], "browser")
     if sys.argv[1] == "-a":
         print("Credential information is not stored anywhere, as you can see by the bare inputs in the code")
-        amz_cred = AmazonCredentials(input("write your amazon email here (required for the scrapping): "), input("write your amazon password: "))
+        isFound, amz_cred = authJsonLookup()
+        if isFound != True:
+            print("Could not find auth, taking manual auth cred:")
+            amz_cred.email, amz_cred.password = input("write your amazon email here (required for the scrapping): "), input("write your amazon password: ")
+        
+        
+        
         scrapper = AmazonScraper(browser, "amazon", 700, sys.argv[2], amz_cred)
+        
         reviews, prod_name = scrapper.scrape_amazon_reviews() 
         write_review_csv(prod_name, reviews, "amazon")
         print("Done!")
