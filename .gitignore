@@ -26,3 +26,5 @@ ENV/
 .coverage
 htmlcov/
 .DS_Store
+csv/
+pyproject.toml
