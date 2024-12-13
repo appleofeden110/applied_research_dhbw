@@ -37,7 +37,7 @@ class AmazonScraper:
         elif self.browser.lower() == "chrome":
             self.driver = webdriver.Chrome()
         else:
-            raise ValueError("Currently, only Firefox and Chrome are supported. To use Firefox, go into ./scrapper/amz_scrape.py and please change the path to the geckodriver, otherwise use Chrome.")
+            raise ValueError("Currently - only Firefox and Chrome are supported. To use Firefox, go into ./scrapper/amz_scrape.py and please change the path to the geckodriver, otherwise use Chrome.")
 
     def humantype(self, element, text, delay=0.2):
         """Simulates human typing by sending keys with a delay."""
