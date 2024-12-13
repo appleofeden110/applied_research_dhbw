@@ -3,6 +3,7 @@
 ## Installation 
 
 ```shell
+# you should be in the applied_research_dhbw directory
 pip install -r requirements.txt
 ```
 
