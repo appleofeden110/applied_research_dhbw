@@ -39,7 +39,7 @@ def write_review_csv(prod_name: str, reviews: List, filename=f"unnamed_source"):
 
 
 def which(choices: List[str], choice_type: str) -> str:
-    print(f"choose {choice_type}?: \n")
+    print(f"\n\nchoose {choice_type}?: \n")
     i = 0
     for choice in choices:
         print(f"\t{i+1}.{choice}")

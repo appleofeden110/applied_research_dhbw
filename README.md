@@ -18,8 +18,12 @@ python ./scrapper/main.py -a or -m"[amazon or media markt.de url]"
 
 ## Amazon reviews
 
-To lookup all reviews, you will need to input your amazon credentials. Another method instead is to make an "auth/auth.json" file, see image: 
-![structure](./auth.png)
+To lookup all reviews, you will need to input your amazon credentials. Another method instead is to make an "auth/auth.json" file, see image (see "Auth on the machine without the code editor" if you do not have one): 
+![structure](auth.png)
+
+Should be in this format:
+
+![content](content.png)
 
 After that you will be able to scrape amazon reviews without any manual input after that.
 
@@ -32,6 +36,16 @@ You will need to complete captcha by just entering six letters on the screen upp
 After you do that, you credentials you entered earlier will proceed to be put on and the program will run its course
 
 It might take 2 turns of authentication so watch out for that.
+
+## Auth on the machine without the code editor
+
+- create text file
+- write your credentials like so: 
+![content](content.png)
+- save it under the name of "auth.json" in the "auth" folder 
+- structure of the project you can see above
+
+ 
 
 
 ## Description 

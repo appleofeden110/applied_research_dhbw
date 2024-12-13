@@ -28,12 +28,16 @@ class AmazonScraper:
     def initialize_driver(self):
         """Initialize the WebDriver based on the browser."""
         if self.browser.lower() == "firefox":
-            service = Service("/snap/bin/geckodriver")  # Update with your geckodriver path
-            self.driver = webdriver.Firefox(service=service)
+            try:
+                service = Service("/snap/bin/geckodriver")  # Update with your geckodriver path
+                self.driver = webdriver.Firefox(service=service)
+            except Exception as e:
+                # strang ANSI in the terminal make the text red and bold
+                print(f"\n\n{e}\033[31;1;4mTo use Firefox, go into ./scrapper/amz_scrape.py and please change the path to the geckodriver, otherwise use Chrome.\n\033[0m") 
         elif self.browser.lower() == "chrome":
             self.driver = webdriver.Chrome()
         else:
-            raise ValueError("Currently, only Firefox is supported.")
+            raise ValueError("Currently, only Firefox and Chrome are supported. To use Firefox, go into ./scrapper/amz_scrape.py and please change the path to the geckodriver, otherwise use Chrome.")
 
     def humantype(self, element, text, delay=0.2):
         """Simulates human typing by sending keys with a delay."""
@@ -50,89 +54,87 @@ class AmazonScraper:
 
         for url in self.filter_reviews():
             try:
-                    self.initialize_driver()
-                    self.driver.get(url)
+                self.initialize_driver()
+                self.driver.get(url)
 
-                    self._login()
+                self._login()
 
-                    # Locate the product link element
-                    WebDriverWait(self.driver, 20).until(
-                        EC.presence_of_all_elements_located((By.CSS_SELECTOR, "a[data-hook='product-link']"))
+                # Locate the product link element
+                WebDriverWait(self.driver, 20).until(
+                    EC.presence_of_all_elements_located((By.CSS_SELECTOR, "a[data-hook='product-link']"))
+                )
+                product_link = self.driver.find_element(By.CSS_SELECTOR, "a[data-hook='product-link']")
+                product_link.click()
+
+                # Extract product price
+                price_symbol = self.driver.find_element(By.CSS_SELECTOR, "span.a-price-symbol").text
+                price_whole = self.driver.find_element(By.CSS_SELECTOR, "span.a-price-whole").text
+                price_fraction = self.driver.find_element(By.CSS_SELECTOR, "span.a-price-fraction").text
+                price = f"{price_symbol}{price_whole}.{price_fraction}"
+                self.driver.back()
+
+
+                while current_review_count < self.num_reviews:
+                    WebDriverWait(self.driver, 10).until(
+                        EC.presence_of_all_elements_located((By.CSS_SELECTOR, "[data-hook='review']"))
                     )
-                    product_link = self.driver.find_element(By.CSS_SELECTOR, "a[data-hook='product-link']")
-                    product_link.click()
-
-                    # Extract product price
-                    price_symbol = self.driver.find_element(By.CSS_SELECTOR, "span.a-price-symbol").text
-                    price_whole = self.driver.find_element(By.CSS_SELECTOR, "span.a-price-whole").text
-                    price_fraction = self.driver.find_element(By.CSS_SELECTOR, "span.a-price-fraction").text
-                    price = f"{price_symbol}{price_whole}.{price_fraction}"
-                    self.driver.back()
-
-
-                    while current_review_count < self.num_reviews:
-                        WebDriverWait(self.driver, 10).until(
-                            EC.presence_of_all_elements_located((By.CSS_SELECTOR, "[data-hook='review']"))
-                        )
-                        reviews = self.driver.find_elements(By.CSS_SELECTOR, "[data-hook='review']")
-                        for review in reviews:
-                            try:
-                                # Product Name
-                                prod_name_element = self.driver.find_element(By.CSS_SELECTOR, "[data-hook='product-link']")
-                                prod_name = prod_name_element.text
-
-                                # Country
-                                country_element = self.driver.find_element(By.CSS_SELECTOR, "[data-hook='arp-local-reviews-header']")
-                                country = country_element.text.split("From")[-1].strip()
-
-                                # Author
-                                author_element = review.find_element(By.CSS_SELECTOR, ".a-profile-name")
-                                author = author_element.text
-
-                                # Review Text
-                                review_txt_element = review.find_element(By.CSS_SELECTOR, "[data-hook='review-body'] span")
-                                review_txt = review_txt_element.text.replace("\n", " ")
-
-                                # Rating
-                                try:
-                                    rating_element = review.find_element(By.CSS_SELECTOR, 'i[data-hook="review-star-rating"] span.a-icon-alt')
-                                    rating_text = rating_element.get_attribute('textContent')
-                                    rating = float(rating_text.split()[0]) if rating_text else 0
-                                except Exception:
-                                    rating = None
-                                print(f"review number: {current_review_count+1}")
-                                review_data = Review(
-                                    id = current_review_count+1,
-                                    prod_name = prod_name,
-                                    price = price,
-                                    country = country,
-                                    source = self.source,
-                                    author = author,
-                                    review_txt = review_txt,
-                                    rating = rating
-                                )
-
-                                reviews_data.append(review_data)
-                                current_review_count += 1
-
-                                if current_review_count >= self.num_reviews:
-                                    break
-
-                            except Exception as e:
-                                print(f"Error parsing review: {e}")
-
-                        # Move to the next page
+                    reviews = self.driver.find_elements(By.CSS_SELECTOR, "[data-hook='review']")
+                    for review in reviews:
                         try:
-                            next_button = self.driver.find_element(By.CSS_SELECTOR, ".a-last a")
-                            next_button.click()
-                            time.sleep(3)  # Wait for the next page to load
-                        except Exception:
-                            print("No more pages available.")
-                            break
+                            # Product Name
+                            prod_name_element = self.driver.find_element(By.CSS_SELECTOR, "[data-hook='product-link']")
+                            prod_name = prod_name_element.text
 
+                            # Country
+                            country_element = self.driver.find_element(By.CSS_SELECTOR, "[data-hook='arp-local-reviews-header']")
+                            country = country_element.text.split("From")[-1].strip()
+
+                            # Author
+                            author_element = review.find_element(By.CSS_SELECTOR, ".a-profile-name")
+                            author = author_element.text
+
+                            # Review Text
+                            review_txt_element = review.find_element(By.CSS_SELECTOR, "[data-hook='review-body'] span")
+                            review_txt = review_txt_element.text.replace("\n", " ")
+
+                            # Rating
+                            try:
+                                rating_element = review.find_element(By.CSS_SELECTOR, 'i[data-hook="review-star-rating"] span.a-icon-alt')
+                                rating_text = rating_element.get_attribute('textContent')
+                                rating = float(rating_text.split()[0]) if rating_text else 0
+                            except Exception:
+                                rating = None
+                            print(f"review number: {current_review_count+1}")
+                            review_data = Review(
+                                id = current_review_count+1,
+                                prod_name = prod_name,
+                                price = price,
+                                country = country,
+                                source = self.source,
+                                author = author,
+                                review_txt = review_txt,
+                                rating = rating
+                            )
+
+                            reviews_data.append(review_data)
+                            current_review_count += 1
+
+                            if current_review_count >= self.num_reviews:
+                                break
+
+                        except Exception as e:
+                            print(f"Error parsing review: {e}")
+
+                    # Move to the next page
+                    try:
+                        next_button = self.driver.find_element(By.CSS_SELECTOR, ".a-last a")
+                        next_button.click()
+                        time.sleep(3)  # Wait for the next page to load
+                    except Exception:
+                        print("No more pages available.")
+                        break
             except Exception as e:
                 print(f"An error occurred: {e}")
-
             finally:
                 if self.driver:
                     self.driver.quit()
@@ -172,19 +174,28 @@ class AmazonScraper:
         acpt_btn.click()
     #data-hook="see-all-reviews-link-foot"
     def _get_reviews_url(self, url) -> str:
-        self.initialize_driver()
-        self.driver.get(url)
-        self._handle_cookies()
-        reveiw_link = WebDriverWait(self.driver, 10).until(
-            EC.presence_of_element_located((By.CSS_SELECTOR, "a[data-hook='see-all-reviews-link-foot']"))
-        )
-        reveiw_link.click()
-        time.sleep(2)
-        self._login()
-        cur_url = self.driver.current_url
-        self.driver.quit()
-        return cur_url
-
+        cur_url = ""
+        try:
+            self.initialize_driver()
+            self.driver.get(url)
+            self._handle_cookies()
+            reveiw_link = WebDriverWait(self.driver, 10).until(
+                EC.presence_of_element_located((By.CSS_SELECTOR, "a[data-hook='see-all-reviews-link-foot']"))
+            )
+            reveiw_link.click()
+            time.sleep(2)
+            self._login()
+            time.sleep(15)
+            cur_url = self.driver.current_url
+        except Exception as e:
+            # strang ANSI in the terminal make the text red and bold
+                print(f"\n\n{e}\n\033[31;1;4mTo use Firefox, go into ./scrapper/amz_scrape.py and please change the path to the geckodriver, otherwise use Chrome.\n\033[0m") 
+        finally:
+            if self.driver:
+                self.driver.quit()
+        if cur_url:
+            return cur_url
+        return ""
 
         
 
