@@ -8,18 +8,32 @@ from mm_scrape import MediaMarktScrapper
 from review import Review
 
 
-def write_review_csv(prod_name: str, reviews: List, filename=f"unnamed_source"):
+def write_review_csv(reviews: List, filename=f"unnamed_source"):
     try:
-        fieldnames = ['id', 'prod_name', 'price', 'country',
-                      'source', 'author', 'review_txt', 'rating']
+        fieldnames = ['id', 
+                      'prod_name', 
+                      'price', 
+                      'category',
+                      'country',
+                      'source', 
+                      'author',
+                      'review_txt', 
+                      'rating', 
+                      'bought_in_past_month', 
+                      'nums_of_reviews', 
+                      'day', 
+                      'month', 
+                      'year']
+        
         print("Creating the CSV directory if it didn't exist before...")
         csv_dir = os.path.abspath("csv/")
         os.makedirs(csv_dir, exist_ok=True)
 
-        sanitized_prod_name = prod_name[:25].replace(
-            "/", " ").replace('"', "").replace("\\", "")
-        file_path = os.path.join(csv_dir, f"{filename}_{
-                                 sanitized_prod_name}.csv")
+        # # More thorough filename sanitization
+        # invalid_chars = '<>:"/\\|?*& '  # Windows invalid filename characters plus space
+        # sanitized_prod_name = ''.join(c if c not in invalid_chars else '_' for c in prod_name[:25]).strip('_')
+        
+        file_path = os.path.join(csv_dir, f"{filename}.csv")
 
         with open(file_path, mode="a+", encoding="UTF-8", newline="") as f:
             is_empty = os.stat(file_path).st_size == 0
@@ -29,7 +43,7 @@ def write_review_csv(prod_name: str, reviews: List, filename=f"unnamed_source"):
                 writer.writeheader()
 
             for i, review in enumerate(reviews, start=1):
-                review_dict = review.to_dict()  # Ensure `review` has a `to_dict()` method
+                review_dict = review.to_dict()
                 review_dict['id'] = i
                 writer.writerow(review_dict)
 
@@ -76,14 +90,13 @@ def main():
         isFound, amz_cred = authJsonLookup()
         if isFound != True:
             print("Could not find auth, taking manual auth cred:")
-            amz_cred.email, amz_cred.password = input("write your amazon email here (required for the scrapping): "), input("write your amazon password: ")
-        
-        
+            amz_cred.email, amz_cred.password = input("write your amazon email here (required for the scrapping): "), input("write your amazon password: ")        
         
         scrapper = AmazonScraper(browser, "amazon", 700, sys.argv[2], amz_cred)
         
-        reviews, prod_name = scrapper.scrape_amazon_reviews() 
-        write_review_csv(prod_name, reviews, "amazon")
+        reviews = scrapper.scrape_amazon_reviews(input("what category is the product?: ")) 
+        write_review_csv(reviews, "amazon")
+        
         print("Done!")
     elif sys.argv[1] == "-m":
         scrapper = MediaMarktScrapper(browser, "media_markt", 20, sys.argv[2])

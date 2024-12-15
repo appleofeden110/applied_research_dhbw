@@ -1,3 +1,4 @@
+from datetime import datetime
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
@@ -45,31 +46,45 @@ class AmazonScraper:
             element.send_keys(char)
             time.sleep(delay * random.randint(1, 10) * math.pow(10, -3))
 
-    def transform_k_notation(text):
+    def transform_k_notation(self, text):
         num = ''.join(c for c in text if c.isdigit() or c in 'K+.').strip()
-        return f"{int(float(num.split('K')[0]) * 1000):,}" + ('+' if '+' in num else '')
+        has_plus = '+' in num
+        clean_num = num.replace('+', '')
+        if 'K' in clean_num:
+            result = int(float(clean_num.split('K')[0]) * 1000)
+        else:
+            result = int(float(clean_num))
+        return f"{result:,}" + ('+' if has_plus else '')
+    
+    def split_date(self, date_string):
+        try:
+            for fmt in ['%d %B %Y', '%B %d %Y', '%Y-%m-%d']:
+                try:
+                    date_object = datetime.strptime(date_string, fmt)
+                    return (date_object.day, date_object.month, date_object.year)
+                except ValueError:
+                    continue
+            raise ValueError(f"Unable to parse date: {date_string}")
+        except Exception as e:
+            print(f"Error processing date {date_string}: {str(e)}")
+            return None
 
-    def scrape_amazon_reviews(self):
+
+    
+    def scrape_amazon_reviews(self, category):
         """Scrape reviews from Amazon."""
         reviews_data = []
         prod_name = None
         current_review_count = 0
 
 
-        for url in self.filter_reviews():
-            try:
+
+
+        
+        try:
                 self.initialize_driver()
-                self.driver.get(url)
-
-                self._login()
-
-                # Locate the product link element
-                WebDriverWait(self.driver, 20).until(
-                    EC.presence_of_all_elements_located((By.CSS_SELECTOR, "a[data-hook='product-link']"))
-                )
-                product_link = self.driver.find_element(By.CSS_SELECTOR, "a[data-hook='product-link']")
-                product_link.click()
-
+                self.driver.get(self.url)
+                self._handle_cookies()
                 # Extract product price
                 price_symbol = self.driver.find_element(By.CSS_SELECTOR, "span.a-price-symbol").text
                 price_whole = self.driver.find_element(By.CSS_SELECTOR, "span.a-price-whole").text
@@ -82,10 +97,27 @@ class AmazonScraper:
                 element = self.driver.find_element(By.ID, "social-proofing-faceout-title-tk_bought")
                 bought_text = element.find_element(By.TAG_NAME, "span").text
                 bought_past_month = self.transform_k_notation(bought_text)                
-                self.driver.back()
+
+                reveiw_link = WebDriverWait(self.driver, 10).until(
+                    EC.presence_of_element_located((By.CSS_SELECTOR, "a[data-hook='see-all-reviews-link-foot']"))
+                )
+                reveiw_link.click()
+                time.sleep(2)
+                self._login()
+                time.sleep(5)
+                # # Locate the product link element
+                # WebDriverWait(self.driver, 20).until(
+                #     EC.presence_of_all_elements_located((By.CSS_SELECTOR, "a[data-hook='product-link']"))
+                # )
+                # product_link = self.driver.find_element(By.CSS_SELECTOR, "a[data-hook='product-link']")
+                # product_link.click()
+
+                # self.driver.back()
 
 
                 while current_review_count < self.num_reviews:
+                    # Country
+
                     WebDriverWait(self.driver, 10).until(
                         EC.presence_of_all_elements_located((By.CSS_SELECTOR, "[data-hook='review']"))
                     )
@@ -95,11 +127,14 @@ class AmazonScraper:
                             # Product Name
                             prod_name_element = self.driver.find_element(By.CSS_SELECTOR, "[data-hook='product-link']")
                             prod_name = prod_name_element.text
-
                             # Country
-                            country_element = self.driver.find_element(By.CSS_SELECTOR, "[data-hook='arp-local-reviews-header']")
-                            country = country_element.text.split("From")[-1].strip()
-
+                            # Reviewed in {country} on {date} 
+                            place_date_info = review.find_element(By.CSS_SELECTOR, "span[data-hook='review-date']").text
+                            print(place_date_info)
+                            place_date = place_date_info.split('Reviewed in ')[1].split(' on ')
+                            country = place_date[0]
+                            date = place_date[1]
+                            day, month, year = self.split_date(date)
                             # Author
                             author_element = review.find_element(By.CSS_SELECTOR, ".a-profile-name")
                             author = author_element.text
@@ -108,25 +143,30 @@ class AmazonScraper:
                             review_txt_element = review.find_element(By.CSS_SELECTOR, "[data-hook='review-body'] span")
                             review_txt = review_txt_element.text.replace("\n", " ")
 
-                            # Rating
+                           # Alternative using XPath
                             try:
-                                rating_element = review.find_element(By.CSS_SELECTOR, 'i[data-hook="review-star-rating"] span.a-icon-alt')
-                                rating_text = rating_element.get_attribute('textContent')
-                                rating = float(rating_text.split()[0]) if rating_text else 0
-                            except Exception:
+                                rating_element = review.find_element(By.XPATH, './/span[contains(@class, "a-icon-alt")] | .//i[@data-hook="review-star-rating"]//span')
+                                rating_text = rating_element.get_attribute('textContent') or rating_element.text
+                                rating = float(rating_text.split()[0].replace(',', '.')) if rating_text else None
+                            except Exception as e:
+                                print(f"Error getting rating with XPath: {e}")
                                 rating = None
                             print(f"review number: {current_review_count+1}")
                             review_data = Review(
                                 id = current_review_count+1,
                                 prod_name = prod_name,
                                 price = price,
+                                category = category,
                                 country = country,
                                 source = self.source,
                                 author = author,
                                 review_txt = review_txt,
                                 rating = rating,
                                 nums_of_reviews = review_num,
-                                bought_in_past_month=bought_past_month
+                                bought_in_past_month=bought_past_month,
+                                day = day, 
+                                month = month, 
+                                year = year
                             )
 
                             reviews_data.append(review_data)
@@ -146,28 +186,28 @@ class AmazonScraper:
                     except Exception:
                         print("No more pages available.")
                         break
-            except Exception as e:
-                print(f"An error occurred: {e}")
-            finally:
-                if self.driver:
-                    self.driver.quit()
+        except Exception as e:
+            print(f"An error occurred: {e}")
+        finally:
+            if self.driver:
+                self.driver.quit()
 
-        return reviews_data, prod_name
+        return reviews_data
     
-    def filter_reviews(self):
-        url = self.url
-        url = self._get_reviews_url(url)
+    # def filter_reviews(self):
+    #     url = self.url
+    #     url = self._get_reviews_url(url)
         
-        base_url, _, _ = url.partition("&sortBy")
-        base_url, _, _ = base_url.partition("&pageNumber")
+    #     base_url, _, _ = url.partition("&sortBy")
+    #     base_url, _, _ = base_url.partition("&pageNumber")
         
-        if "&pageNumber" not in url:
-            base_url += "&pageNumber=1"
+    #     if "&pageNumber" not in url:
+    #         base_url += "&pageNumber=1"
         
-        return [
-            base_url+"&sortBy=helpful", 
-            base_url+"&sortBy=recent"
-        ]
+    #     return [
+    #         base_url+"&sortBy=helpful", 
+    #         base_url+"&sortBy=recent"
+    #     ]
 
     def _login(self): 
         # Login Workflow
@@ -186,29 +226,29 @@ class AmazonScraper:
         )
         acpt_btn.click()
     #data-hook="see-all-reviews-link-foot"
-    def _get_reviews_url(self, url) -> str:
-        cur_url = ""
-        try:
-            self.initialize_driver()
-            self.driver.get(url)
-            self._handle_cookies()
-            reveiw_link = WebDriverWait(self.driver, 10).until(
-                EC.presence_of_element_located((By.CSS_SELECTOR, "a[data-hook='see-all-reviews-link-foot']"))
-            )
-            reveiw_link.click()
-            time.sleep(2)
-            self._login()
-            time.sleep(15)
-            cur_url = self.driver.current_url
-        except Exception as e:
-            # strang ANSI in the terminal make the text red and bold
-                print(f"\n\n{e}\n\033[31;1;4mTo use Firefox, go into ./scrapper/amz_scrape.py and please change the path to the geckodriver, otherwise use Chrome.\n\033[0m") 
-        finally:
-            if self.driver:
-                self.driver.quit()
-        if cur_url:
-            return cur_url
-        return ""
+    # def _get_reviews_url(self, url) -> str:
+    #     cur_url = ""
+    #     try:
+    #         self.initialize_driver()
+    #         self.driver.get(url)
+    #         self._handle_cookies()
+    #         reveiw_link = WebDriverWait(self.driver, 10).until(
+    #             EC.presence_of_element_located((By.CSS_SELECTOR, "a[data-hook='see-all-reviews-link-foot']"))
+    #         )
+    #         reveiw_link.click()
+    #         time.sleep(2)
+    #         self._login()
+    #         time.sleep(15)
+    #         cur_url = self.driver.current_url
+    #     except Exception as e:
+    #         # strang ANSI in the terminal make the text red and bold
+    #             print(f"\n\n{e}\n\033[31;1;4mTo use Firefox, go into ./scrapper/amz_scrape.py and please change the path to the geckodriver, otherwise use Chrome.\n\033[0m") 
+    #     finally:
+    #         if self.driver:
+    #             self.driver.quit()
+    #     if cur_url:
+    #         return cur_url
+    #     return ""
 
         
 
