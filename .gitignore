@@ -28,5 +28,6 @@ ENV/
 htmlcov/
 .DS_Store
 csv/
+*.zip
 pyproject.toml
 auth/

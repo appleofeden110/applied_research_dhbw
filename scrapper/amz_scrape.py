@@ -45,6 +45,10 @@ class AmazonScraper:
             element.send_keys(char)
             time.sleep(delay * random.randint(1, 10) * math.pow(10, -3))
 
+    def transform_k_notation(text):
+        num = ''.join(c for c in text if c.isdigit() or c in 'K+.').strip()
+        return f"{int(float(num.split('K')[0]) * 1000):,}" + ('+' if '+' in num else '')
+
     def scrape_amazon_reviews(self):
         """Scrape reviews from Amazon."""
         reviews_data = []
@@ -71,6 +75,13 @@ class AmazonScraper:
                 price_whole = self.driver.find_element(By.CSS_SELECTOR, "span.a-price-whole").text
                 price_fraction = self.driver.find_element(By.CSS_SELECTOR, "span.a-price-fraction").text
                 price = f"{price_symbol}{price_whole}.{price_fraction}"
+
+                # Number of reviews
+                review_num = self.driver.find_element(By.ID, "acrCustomerReviewText").text
+
+                element = self.driver.find_element(By.ID, "social-proofing-faceout-title-tk_bought")
+                bought_text = element.find_element(By.TAG_NAME, "span").text
+                bought_past_month = self.transform_k_notation(bought_text)                
                 self.driver.back()
 
 
@@ -113,7 +124,9 @@ class AmazonScraper:
                                 source = self.source,
                                 author = author,
                                 review_txt = review_txt,
-                                rating = rating
+                                rating = rating,
+                                nums_of_reviews = review_num,
+                                bought_in_past_month=bought_past_month
                             )
 
                             reviews_data.append(review_data)
